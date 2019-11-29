@@ -1,6 +1,5 @@
 crap/*
 openocd/*
-bin/*
 /*/FLASH_RUN/
 various/*
 toolchain/*
