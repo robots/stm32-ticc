@@ -1,0 +1,11 @@
+crap/*
+openocd/*
+bin/*
+/*/FLASH_RUN/
+various/*
+toolchain/*
+*.o
+*.pyc
+*.lst
+*.d
+.hg

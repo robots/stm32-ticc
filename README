@@ -1,0 +1,56 @@
+
+#STM32 based TICC
+
+
+This project is based on TAPR's TICC project.
+
+
+## Hardware
+
+The frontend for time capture is copied from their schematic. Change has been done to input PICDIV that is responsible for coarse clock generation.
+
+Original design uses pic12f675. For this design I have used pic12f1572. The software differences are only minor - few bank switch instructions. Hardware differense is almost none. Functional
+difference is yet to be determined. But I dont think that the deterministic behavior of PIC has been changed.
+
+Workhorse has been changed from ATMEGA to something more recent. I have used STM32F042.
+
+This MCU has integrated 48MHz oscillator with clock recovery from USB, USB peripheral, lots of flash/ram for such simple project.
+
+
+## Software
+
+TICC presents on USB as ACM device. This works without any additional driver on linux. For windows i dont know - you will probably need ST's ACM driver. (google is your friend)
+
+To connect use any terminal emulator you like - windows: realterm, teraterm, hyperterminal, ... for linux: minicom, screen, tio. Set speed to something reasonable (eg. 921600) and hit enter.
+
+You should be presented with command line prompt ">".
+
+Commands are:
+
+help - prints help
+reboot - reboots board
+dfu - switches mcu to dfu mode. Carefull, you will need dfu-util to bring device back to live.
+cfg - configuration submenu
+
+cfg show - prints current configuration
+cfg set xx blabla - sets variable "xx" to value "blabla"
+cfg save - saves configuration to eeprom (not working yet)
+
+Most configuration options are same as TICC, for more info refer to their documentation.
+
+# Building
+You will need gnuarm toolchain, gnu make and dfu-util.
+
+Make sure that you have arm toolchain in PATH, enter "main" directory, and type "make bin".
+
+To write the firmware to board use "dfu.sh" script. This script does two things: writes firmware and writes options to exit dfu mode.
+
+# Credits
+Software has been mostly written from scratch except for:
+- usb stack, stdlibrary - from ST
+- time interval calculation routines and TDC7200 driver  - from original TICC project, mostly rewritten or adapted for better readability - https://github.com/TAPR/TICC
+- tfprintf - Copyright (C) 2004,2012  Kustaa Nyholm http://www.sparetimelabs.com/tinyprintf/index.html
+
+Hardware:
+- based on https://github.com/TAPR/TICC
+

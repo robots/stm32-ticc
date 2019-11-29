@@ -1,0 +1,6 @@
+In this directory:
+
+ticc.* - schematic/board layout for TICC
+picdiv.* - schematic/board layout for simple PICDIV board.
+
+There is absolutely no warranty and not support for these boards. While there are few working examples of this design I dont have time or resources for support.
