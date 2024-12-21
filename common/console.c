@@ -83,6 +83,7 @@ void console_init(void)
 
 void console_periodic(void)
 {
+#if CONSOLE_HAVE_THREAD
 	uint32_t i;
 
 	for (i = 0; i < CONSOLE_SESSION_NUM; i++) {
@@ -90,6 +91,7 @@ void console_periodic(void)
 			console_thread_handle(&console_sessions[i]);
 		}
 	}
+#endif
 }
 
 void console_add_command(struct console_command_t *new_cmd)
@@ -446,6 +448,7 @@ static struct console_command_t *console_cmd_find(struct console_session_t *cs, 
 
 static void console_auth_process(struct console_session_t *cs)
 {
+	(void)cs;
 /*	if (cs->auth_state == CON_AUTH_USER) {
 		if (strlen(ee_config.password) == 0) {
 			cs->auth_state = CON_AUTH_OK;
@@ -535,6 +538,9 @@ static uint8_t cmd_verbose(struct console_session_t *cs, char **args)
 
 static uint8_t cmd_reboot(struct console_session_t *cs, char **args)
 {
+	(void)cs;
+	(void)args;
+
 	NVIC_SystemReset();
 
 	return 0;
@@ -543,6 +549,9 @@ static uint8_t cmd_reboot(struct console_session_t *cs, char **args)
 
 static uint8_t cmd_dfu(struct console_session_t *cs, char **args)
 {
+	(void)cs;
+	(void)args;
+
 	struct flash_ob_t ob;
 
 	flash_ob_read(&ob);
