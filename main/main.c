@@ -3,6 +3,7 @@
 #include "usbd_cdc_core.h"
 #include "usbd_usr.h"
 
+#include "console.h"
 #include "systime.h"
 #include "led.h"
 
