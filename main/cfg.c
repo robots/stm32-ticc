@@ -13,19 +13,18 @@ struct cfg_t cfg_default = {
 	.mode = 0,
 	.poll_char = 0,
 	.clock_hz = 10000000,
-	.pictick_ps = 100000000,
 	.cal_periods = 20,
 	.timeout = 0x05,
 	.tdc = {
 		{
 			.start_edge = 0,
-			.time_dilatation = 2500,
+			.time_dilatation = 0, //2500,
 			.fixed_time2 = 0,
 			.fudge0 = 0,
 		},
 		{
 			.start_edge = 0,
-			.time_dilatation = 2500,
+			.time_dilatation = 0, //2500,
 			.fixed_time2 = 0,
 			.fudge0 = 0,
 		}
@@ -54,8 +53,6 @@ void cfg_init(void)
 		}
 	}
 
-	cfg_current.clock_period = (uint64_t)1000000000000 / cfg_current.clock_hz;
-	cfg_current.pictick_ps = cfg_current.clock_period * 1000; // 10Mhz -> 100kHz
 	if ((cfg_current.cal_periods != 2) && (cfg_current.cal_periods != 10) && (cfg_current.cal_periods != 20) && (cfg_current.cal_periods != 40)) {
 		cfg_current.cal_periods = cfg_default.cal_periods;
 	}

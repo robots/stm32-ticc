@@ -52,10 +52,12 @@ static uint64_t ticc_last_coarse = 0;
 static uint32_t ticc_last_check = 0;
 static int ticc_coarse_lost = 0;
 
-static void ticc_restart();
 static void ticc_coarse_inthandler(void);
 static void ticc_stopA_inthandler(void);
 static void ticc_stopB_inthandler(void);
+static struct tdc7200_cfg_t tdc_cfg[2];
+
+static void ticc_restart_measurement(void);
 
 void ticc_init(void)
 {
@@ -91,7 +93,7 @@ void ticc_init(void)
 		}
 	}
 
-	ticc_restart();
+	ticc_restart_measurement();
 }
 
 static void ticc_stop()
@@ -101,16 +103,26 @@ static void ticc_stop()
 	}
 }
 
-static void ticc_restart()
+static void ticc_restart_measurement()
 {
 	ticc_stop();
 
 	// reset counters
 	memset(&ticc_chan, 0, sizeof(struct ticc_chan_t)*2);
 
+	for (int i = 0; i < 2; i++) {
+		tdc_cfg[i].start_edge = cfg_current.tdc[i].start_edge;
+		tdc_cfg[i].time_dilatation = cfg_current.tdc[i].time_dilatation;
+		tdc_cfg[i].fixed_time2 = cfg_current.tdc[i].fixed_time2;
+		tdc_cfg[i].fudge0 = cfg_current.tdc[i].fudge0;
+		tdc_cfg[i].clock_period = PS_PER_SEC / cfg_current.clock_hz;
+		tdc_cfg[i].cal_periods = cfg_current.cal_periods;
+		tdc_cfg[i].timeout = cfg_current.timeout;
+	}
+
 	// start measurement
 	for (int i = 0; i < 2; i++) {
-		tdc7200_setup(i, &cfg_current);
+		tdc7200_setup(i, &tdc_cfg[i]);
 		tdc7200_ready(i);
 	}
 
@@ -136,44 +148,36 @@ static void ticc_restart()
 void ticc_to_str_signed(char *str, int64_t x)
 {
 	uint64_t sec, frac;
-//	uint64_t frach, fracl;
 
-	sec = ABS(x / 1000000000000);
-	frac = ABS(x % 1000000000000);
-
-	// break fractional part of seconds into two 6 digit numbers
-
-//	frach = frac / 1000000;
-//	fracl = frac % 1000000;
+	sec  = ABS(x / PS_PER_SEC);
+	frac = ABS(x % PS_PER_SEC);
 
 	if (x < 0) {
 		str[0] = '-';
 		str++;
 	}
 
-//	tfp_sprintf(str, "%llu.%06llu%06llu", sec, frach, fracl);
 	tfp_sprintf(str, "%llu.%012llu", sec, frac);
 }
 
 void ticc_to_str_unsigned(char *str, uint64_t x)
 {
 	uint64_t sec, frac;
-	//uint64_t frach, fracl;
 
-	sec = ABS(x / 1000000000000);
-	frac = ABS(x % 1000000000000);
+	sec  = ABS(x / PS_PER_SEC);
+	frac = ABS(x % PS_PER_SEC);
 
-	// break fractional part of seconds into two 6 digit numbers
-
-//	frach = frac / 1000000;
-//	fracl = frac % 1000000;
-
-//	tfp_sprintf(str, "%llu.%06llu%06llu", sec, frach, fracl);
 	tfp_sprintf(str, "%llu.%012llu", sec, frac);
 }
 
 void ticc_periodic(void)
 {
+	uint64_t clock_period; // calculated
+	uint64_t pictick_ps;
+
+	clock_period = PS_PER_SEC / cfg_current.clock_hz;
+	pictick_ps = clock_period * 1000; // 10Mhz -> 100kHz
+
 	// check reference clock
 	if (systime_get() - ticc_last_check > SYSTIME_SEC(1)) {
 		ticc_last_check = systime_get();
@@ -206,8 +210,8 @@ void ticc_periodic(void)
 
 		ticc_chan[i].last_tof = ticc_chan[i].tof;
 		ticc_chan[i].last_ts = ticc_chan[i].ts;
-		ticc_chan[i].tof = tdc7200_read(i, &cfg_current);
-		ticc_chan[i].ts = (ticc_chan[i].pic_stop * cfg_current.pictick_ps) - ticc_chan[i].tof;
+		ticc_chan[i].tof = tdc7200_read(i, &tdc_cfg[i]);
+		ticc_chan[i].ts = (ticc_chan[i].pic_stop * pictick_ps) - ticc_chan[i].tof;
 		ticc_chan[i].period = ticc_chan[i].ts - ticc_chan[i].last_ts;
 		ticc_chan[i].totalize ++;
 
@@ -252,7 +256,15 @@ void ticc_periodic(void)
 
 					break;
 				case MODE_DEBUG:
-					console_printf(CON_ERR, "%06d %06d %06d %06d %06d %06llu ch%c\n", tdc7200_data[i].time1, tdc7200_data[i].time2, tdc7200_data[i].clock1, tdc7200_data[i].cal1, tdc7200_data[i].cal2, tdc7200_data[i].calcount, (i==0) ? 'A' : 'B');
+					console_printf(CON_ERR, "%06d %06d %06d %06d %06d %06llu %06llu ch%c\n",
+							tdc7200_data[i].time1,
+							tdc7200_data[i].time2,
+							tdc7200_data[i].clock1,
+							tdc7200_data[i].cal1,
+							tdc7200_data[i].cal2,
+							tdc7200_data[i].calcount,
+							ticc_chan[i].tof,
+							(i==0) ? 'A' : 'B');
 					break;
 				default:
 					break;

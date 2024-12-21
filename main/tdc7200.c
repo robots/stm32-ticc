@@ -49,7 +49,7 @@ void tdc7200_stop(int cs)
 	systime_delay(5);
 }
 
-void tdc7200_setup(int cs, struct cfg_t *cfg)
+void tdc7200_setup(int cs, struct tdc7200_cfg_t *cfg)
 {
 	// reset TDC
 	GPIO_Set(&tdc_gpio[cs], GPIO_RESET);
@@ -73,11 +73,12 @@ void tdc7200_setup(int cs, struct cfg_t *cfg)
 
 	uint8_t config1 = 0;
 
-	if (cfg->tdc[cs].start_edge) {
-		config1 |= 0x08;
+	if (cfg->start_edge) {
+		config1 |= TDC7200_CONFIG1_START_EDGE;
 	}
 
-	config1 |= 0x80 | 0x02 | 0x01;
+	config1 |= TDC7200_CONFIG1_FORCE_CAL /* | TDC7200_CONFIG1_MEAS_MODE_0*/ | TDC7200_CONFIG1_START_MEAS;
+	config1 |= TDC7200_CONFIG1_MEAS_MODE_0;
 
 	tdc7200_config1[cs] = config1;
 	
@@ -89,12 +90,12 @@ void tdc7200_ready(int cs)
 	tdc7200_reg_write(cs, TDC7200_CONFIG1, tdc7200_config1[cs]);
 }
 
-int64_t tdc7200_read(int cs, struct cfg_t *cfg)
+int64_t tdc7200_read(int cs, struct tdc7200_cfg_t *cfg)
 {
 //	int32_t time1, time2, clock1, cal1, cal2;
 	int32_t time2;
 	int32_t ring_ticks;
-	int64_t normlsb, calcount, ring_ps, tof;
+	int64_t calcount, ring_ps, tof;
 
 	//console_printf(CON_ERR, "tdc%d: status = %08x\n", cs, tdc7200_reg_read(cs, TDC7200_INT_STATUS));
 
@@ -104,13 +105,14 @@ int64_t tdc7200_read(int cs, struct cfg_t *cfg)
 	tdc7200_data[cs].cal1 = tdc7200_reg_read24(cs, TDC7200_CALIBRATION1);
 	tdc7200_data[cs].cal2 = tdc7200_reg_read24(cs, TDC7200_CALIBRATION2);
 
+	tof = 0;
 	tof = (int64_t)tdc7200_data[cs].clock1 * cfg->clock_period;
-	tof -= (int64_t)cfg->tdc[cs].fudge0;
+	tof -= (int64_t)cfg->fudge0;
 
-	calcount = ((int64_t)(tdc7200_data[cs].cal2 - tdc7200_data[cs].cal1) * (uint64_t)(1000000 - cfg->tdc[cs].time_dilatation)) / (int64_t)(cfg->cal_periods - 1);
+	calcount = ((int64_t)(tdc7200_data[cs].cal2 - tdc7200_data[cs].cal1) * (uint64_t)(1000000 - cfg->time_dilatation)) / (int64_t)(cfg->cal_periods - 1);
 
-	if (cfg->tdc[cs].fixed_time2) {
-		time2 = cfg->tdc[cs].fixed_time2;
+	if (cfg->fixed_time2) {
+		time2 = cfg->fixed_time2;
 	} else {
 		time2 = tdc7200_data[cs].time2;
 	}
@@ -125,11 +127,11 @@ int64_t tdc7200_read(int cs, struct cfg_t *cfg)
 	//calcount = tdc7200_data[cs].calcount + ((calcount - tdc7200_data[cs].calcount) * 650) / 1000;
 	calcount = (9999 * tdc7200_data[cs].calcount + 1 * calcount) / 10000;
 #endif
+
 	tdc7200_data[cs].calcount = calcount;
 
-	normlsb = ((int64_t)cfg->clock_period * (int64_t)1000000000000 ) / calcount; 
 	ring_ticks = tdc7200_data[cs].time1 - time2;
-	ring_ps = (normlsb * (int64_t)ring_ticks) / (int64_t)1000000;
+	ring_ps = ((int64_t)cfg->clock_period * (int64_t)1000000  * (int64_t)ring_ticks) / calcount;
 	tof += ring_ps;
 
 	return tof;

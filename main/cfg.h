@@ -50,9 +50,7 @@ struct cfg_t {
 	uint32_t magic;
 	uint32_t mode;
 	char poll_char;
-	uint64_t clock_period; // calculated
 	uint64_t clock_hz;
-	uint64_t pictick_ps;   // clock_period / 1000
 	uint32_t cal_periods;
 	uint32_t timeout;
 	struct cfg_tdc_t tdc[2];

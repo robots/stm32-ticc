@@ -28,6 +28,25 @@
 #define TDC7200_CALIBRATION1         0x1B
 #define TDC7200_CALIBRATION2         0x1C
 
+#define TDC7200_CONFIG1_FORCE_CAL    0x80
+#define TDC7200_CONFIG1_PARITY_EN    0x40
+#define TDC7200_CONFIG1_TRIGG_EDGE   0x20
+#define TDC7200_CONFIG1_STOP_EDGE    0x10
+#define TDC7200_CONFIG1_START_EDGE   0x08
+#define TDC7200_CONFIG1_MEAS_MODE_1  0x04
+#define TDC7200_CONFIG1_MEAS_MODE_0  0x02
+#define TDC7200_CONFIG1_START_MEAS   0x01
+
+struct tdc7200_cfg_t {
+	uint32_t start_edge; // 0 - rising edge, 1 - falling edge
+	int32_t time_dilatation;
+	int32_t fixed_time2; // in tdc units
+	int64_t fudge0; // in ps
+	uint64_t clock_period; // in ps
+	uint32_t cal_periods;
+	uint32_t timeout;
+};
+
 struct tdc7200_data_t {
 	int32_t time1;
 	int32_t time2;
@@ -42,8 +61,8 @@ extern struct tdc7200_data_t tdc7200_data[2];
 
 void tdc7200_init(void);
 void tdc7200_stop(int cs);
-void tdc7200_setup(int cs, struct cfg_t *cfg);
+void tdc7200_setup(int cs, struct tdc7200_cfg_t *cfg);
 void tdc7200_ready(int cs);
-int64_t tdc7200_read(int cs, struct cfg_t *cfg);
+int64_t tdc7200_read(int cs, struct tdc7200_cfg_t *cfg);
 
 #endif
