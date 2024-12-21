@@ -11,7 +11,7 @@
 
 #include "ticc.h"
 
-#define PS_PER_SEC                (int64_t)  1000000000000   // ps/s
+#define PS_PER_SEC                ((int64_t)1000000000000)   // ps/s
 
 const struct gpio_init_table_t ticc_gpio[] = {
 	{ // coarse timer
