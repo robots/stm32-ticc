@@ -15,10 +15,10 @@ struct gpio_init_table_t {
 	uint16_t pin;
 	GPIOMode_TypeDef mode;
 	GPIOSpeed_TypeDef speed;
-#if defined(STM32F4XX) || defined(STM32F042)
 	GPIOPuPd_TypeDef pupd;
 	GPIOOType_TypeDef otype;
-#endif
+	uint16_t af;
+
 	enum gpio_state_t state;
 };
 
